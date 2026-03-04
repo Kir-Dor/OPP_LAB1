@@ -29,27 +29,27 @@ inline void multiply(const MathStructs::Matrix &mat,
   for (size_t i = 0; i < mat.row_count(); ++i) {
     result[i] = transformReduce(
         mat.begin() + i * column_count, mat.begin() + (i + 1) * column_count,
-        vec.begin(), 0.0, std::plus(), std::multiplies());
+        vec.begin(), 0.0, std::plus<double>(), std::multiplies<double>());
   }
 }
 
 inline void add(const MathStructs::Vector &vec1,
                 const MathStructs::Vector &vec2, MathStructs::Vector &result) {
   std::transform(vec1.begin(), vec1.end(), vec2.begin(), result.begin(),
-                 std::plus());
+                 std::plus<double>());
 }
 
 inline void substract(const MathStructs::Vector &vec1,
                       const MathStructs::Vector &vec2,
                       MathStructs::Vector &result) {
   std::transform(vec1.begin(), vec1.end(), vec2.begin(), result.begin(),
-                 std::minus());
+                 std::minus<double>());
 }
 
 inline double dotVecVec(const MathStructs::Vector &vec1,
                         const MathStructs::Vector &vec2) {
   return transformReduce(vec1.begin(), vec1.end(), vec2.begin(), 0.0,
-                               std::plus(), std::multiplies());
+                               std::plus<double>(), std::multiplies<double>());
 }
 
 inline void multiply(double scal, const MathStructs::Vector &vec,
