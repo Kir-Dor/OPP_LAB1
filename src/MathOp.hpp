@@ -4,7 +4,21 @@
 
 #include <algorithm>
 #include <cmath>
-#include <numeric>
+
+template <typename InIt1, typename InIt2, typename ReduceOp,
+          typename TransformOp>
+inline double transformReduce(InIt1 first1, InIt1 last1, InIt2 first2,
+                              double init, ReduceOp reduceOp,
+                              TransformOp transformOp) {
+  while (first1 != last1) {
+    init = reduceOp(init, transformOp(*first1, *first2));
+
+    ++first1;
+    ++first2;
+  }
+
+  return init;
+}
 
 inline void multiply(const MathStructs::Matrix &mat,
                      const MathStructs::Vector &vec,
@@ -13,7 +27,7 @@ inline void multiply(const MathStructs::Matrix &mat,
   auto column_count = mat.column_count();
 
   for (size_t i = 0; i < mat.row_count(); ++i) {
-    result[i] = std::transform_reduce(
+    result[i] = transformReduce(
         mat.begin() + i * column_count, mat.begin() + (i + 1) * column_count,
         vec.begin(), 0.0, std::plus(), std::multiplies());
   }
@@ -34,7 +48,7 @@ inline void substract(const MathStructs::Vector &vec1,
 
 inline double dotVecVec(const MathStructs::Vector &vec1,
                         const MathStructs::Vector &vec2) {
-  return std::transform_reduce(vec1.begin(), vec1.end(), vec2.begin(), 0.0,
+  return transformReduce(vec1.begin(), vec1.end(), vec2.begin(), 0.0,
                                std::plus(), std::multiplies());
 }
 

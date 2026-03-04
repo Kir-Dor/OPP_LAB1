@@ -10,7 +10,7 @@ inline double checkAnswer(const MathStructs::Matrix &leMatrix,
   MathStructs::Vector calcLEVector(N);
   multiply(leMatrix, answer, calcLEVector);
 
-  auto accuracy = std::transform_reduce(
+  auto accuracy = transformReduce(
       leVector.begin(), leVector.end(), calcLEVector.begin(), 0.0, std::plus(),
       [](auto x, auto y) { return std::abs(x - y); });
 
