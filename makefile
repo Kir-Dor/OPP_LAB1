@@ -1,7 +1,7 @@
-CC = mpic++
+CC = mpicxx
 EXECUTABLE_NAME = app
 
-BASE_FLAGS = -Wall -Wextra 
+BASE_FLAGS = -Wall -Wextra
 
 DEBUG_DIR = build_debug
 DEBUG_FLAGS = -g $(BASE_FLAGS)
