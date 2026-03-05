@@ -1,8 +1,9 @@
 import os
+import sys
 from pathlib import Path
 
 
-def create_shell_script(script_path, queue_name="", processes=1):
+def create_shell_script(script_path, queue_name="", processes=1, N=1000, variant=1):
     script_path = Path(script_path)
     script_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -19,7 +20,7 @@ echo “Number of MPI process: $MPI_NP“
 echo ‘File $PBS_NODEFILE:’
 cat $PBS_NODEFILE
 echo
-mpirun -machinefile $PBS_NODEFILE -np $MPI_NP ~/lab1/build_release/app"""
+mpirun -machinefile $PBS_NODEFILE -np $MPI_NP ~/lab1/build_release/app {N} {variant}"""
         )
 
     # Make script executable
@@ -30,5 +31,9 @@ mpirun -machinefile $PBS_NODEFILE -np $MPI_NP ~/lab1/build_release/app"""
 # Example usage
 if __name__ == "__main__":
     create_shell_script(
-        "./run/test_script.sh",
+        script_path="./run/test_script.sh",
+        queue_name=sys.argv[1] if len(sys.argv) > 1 else "",
+        processes=1,
+        N=1000,
+        variant=1
     )
