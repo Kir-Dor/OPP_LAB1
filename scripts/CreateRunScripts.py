@@ -15,9 +15,9 @@ def create_shell_script(script_path, queue_name="", processes=1, N=1000, variant
 #PBS -l select=2:ncpus=8:mpiprocs={processes}
 #PBS -m n
 cd $PBS_O_WORKDIR
-MPI_NP=$(wc -l $PBS_NODEFILE | awk ‘{{ print $1 }}’)
+MPI_NP=$(wc -l $PBS_NODEFILE | awk '{{ print $1 }}')
 echo “Number of MPI process: $MPI_NP“
-echo ‘File $PBS_NODEFILE:’
+echo 'File $PBS_NODEFILE:'
 cat $PBS_NODEFILE
 echo
 mpirun -machinefile $PBS_NODEFILE -np $MPI_NP ~/lab1/build_release/app {N} {variant}"""
