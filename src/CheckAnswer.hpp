@@ -8,7 +8,7 @@ inline double checkAnswer(const MathStructs::Matrix &leMatrix,
   auto N = answer.size();
 
   MathStructs::Vector calcLEVector(N);
-  multiply(leMatrix, answer, calcLEVector);
+  multiply(leMatrix, answer, calcLEVector, 0);
 
   auto accuracy = transformReduce(
       leVector.begin(), leVector.end(), calcLEVector.begin(), 0.0, std::plus<double>(),

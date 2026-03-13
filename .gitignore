@@ -1,4 +1,4 @@
-build_debug
-build_release
+cmake-build-debug-mpi
+cmake-build-release-mpi
 scripts/run
 .vscode

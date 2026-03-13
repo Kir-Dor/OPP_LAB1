@@ -22,14 +22,15 @@ inline double transformReduce(InIt1 first1, InIt1 last1, InIt2 first2,
 
 inline void multiply(const MathStructs::Matrix &mat,
                      const MathStructs::Vector &vec,
-                     MathStructs::Vector &result) {
+                     MathStructs::Vector &result,
+                     size_t offset) {
   auto row_count = mat.row_count();
   auto column_count = mat.column_count();
 
-  for (size_t i = 0; i < mat.row_count(); ++i) {
+  for (size_t i = 0; i < row_count; ++i) {
     result[i] = transformReduce(
-        mat.begin() + i * column_count, mat.begin() + (i + 1) * column_count,
-        vec.begin(), 0.0, std::plus<double>(), std::multiplies<double>());
+        vec.begin(), vec.end(),
+        mat.begin() + static_cast<ssize_t>(i * column_count + offset), 0.0, std::plus<double>(), std::multiplies<double>());
   }
 }
 

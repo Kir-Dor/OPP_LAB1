@@ -5,142 +5,168 @@
 #include "MathOp.hpp"
 #include "Structs.hpp"
 #include <mpi.h>
+#include <cmath>
 #include <vector>
 
-struct TaskContext {
-  std::vector<int> rowCounts, rowIndexes;
-  double epsilon;
-  int n, rank, pcount;
+struct TaskContext
+{
+    std::vector<int> rowCounts, rowIndexes;
+    double epsilon;
+    int n, rank, pcount;
 };
 
-inline void solveParVariant1(const TaskContext &ctx) {
-  MathStructs::Matrix localMatrixA = generateLocalMatrix(
-      ctx.n, ctx.rowIndexes[ctx.rank], ctx.rowCounts[ctx.rank]);
+inline void solveParVariant1(const TaskContext& ctx)
+{
+    MathStructs::Matrix localMatrixA = generateLocalMatrix(
+        ctx.n, ctx.rowIndexes[ctx.rank], ctx.rowCounts[ctx.rank]);
 
-  MathStructs::Vector vectorB = generateLocalVector(ctx.n, 0, ctx.n);
-  MathStructs::Vector vectorX(ctx.n, 0.0);
+    MathStructs::Vector vectorB = generateLocalVector(ctx.n, 0, ctx.n);
+    MathStructs::Vector vectorX(ctx.n, 0.0);
 
-  auto timeStart = MPI_Wtime();
+    auto timeStart = MPI_Wtime();
 
-  MathStructs::Vector vectorR = vectorB;
-  MathStructs::Vector vectorZ = vectorR;
-  MathStructs::Vector vectorTemp(ctx.n);
-  MathStructs::Vector globalVectorAZ(ctx.n);
-  MathStructs::Vector localVectorAZ(ctx.rowCounts[ctx.rank]);
-  MathStructs::Vector vectorRNext(ctx.n);
+    MathStructs::Vector vectorR = vectorB;
+    MathStructs::Vector vectorZ = vectorR;
+    MathStructs::Vector vectorTemp(ctx.n);
+    MathStructs::Vector globalVectorAZ(ctx.n);
+    MathStructs::Vector localVectorAZ(ctx.rowCounts[ctx.rank]);
+    MathStructs::Vector vectorRNext(ctx.n);
 
-  while (lenVec(vectorR) / lenVec(vectorB) > ctx.epsilon) {
-    multiply(localMatrixA, vectorZ, localVectorAZ);
-    MPI_Allgatherv(localVectorAZ.data(), localVectorAZ.size(), MPI_DOUBLE,
-                   globalVectorAZ.data(), ctx.rowCounts.data(),
-                   ctx.rowIndexes.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+    while (lenVec(vectorR) / lenVec(vectorB) > ctx.epsilon)
+    {
+        multiply(localMatrixA, vectorZ, localVectorAZ, 0);
+        MPI_Allgatherv(localVectorAZ.data(), static_cast<int>(localVectorAZ.size()), MPI_DOUBLE,
+                       globalVectorAZ.data(), ctx.rowCounts.data(),
+                       ctx.rowIndexes.data(), MPI_DOUBLE, MPI_COMM_WORLD);
 
-    double scalarA =
-        dotVecVec(vectorR, vectorR) / dotVecVec(globalVectorAZ, vectorZ);
+        double scalarA =
+            dotVecVec(vectorR, vectorR) / dotVecVec(globalVectorAZ, vectorZ);
 
-    multiply(scalarA, vectorZ, vectorTemp);
-    add(vectorX, vectorTemp, vectorX);
+        multiply(scalarA, vectorZ, vectorTemp);
+        add(vectorX, vectorTemp, vectorX);
 
-    multiply(scalarA, globalVectorAZ, vectorTemp);
-    substract(vectorR, vectorTemp, vectorRNext);
+        multiply(scalarA, globalVectorAZ, vectorTemp);
+        substract(vectorR, vectorTemp, vectorRNext);
 
-    double scalarB =
-        dotVecVec(vectorRNext, vectorRNext) / dotVecVec(vectorR, vectorR);
+        double scalarB =
+            dotVecVec(vectorRNext, vectorRNext) / dotVecVec(vectorR, vectorR);
 
-    multiply(scalarB, vectorZ, vectorTemp);
-    add(vectorRNext, vectorTemp, vectorZ);
+        multiply(scalarB, vectorZ, vectorTemp);
+        add(vectorRNext, vectorTemp, vectorZ);
 
-    std::swap(vectorR, vectorRNext);
-  }
+        std::swap(vectorR, vectorRNext);
+    }
 
-  auto duration = MPI_Wtime() - timeStart;
+    auto duration = MPI_Wtime() - timeStart;
 
-  if (ctx.rank == 0) {
-    MathStructs::Matrix matrixA = generateLocalMatrix(ctx.n, 0, ctx.n);
-    std::cout << "Time spent: " << duration << " seconds\n";
-    std::cout << "inaccuracy: " << checkAnswer(matrixA, vectorB, vectorX)
-              << '\n';
-  }
+    if (ctx.rank == 0)
+    {
+        MathStructs::Matrix matrixA = generateLocalMatrix(ctx.n, 0, ctx.n);
+        std::cout << "Time spent: " << duration << " seconds\n";
+        std::cout << "inaccuracy: " << checkAnswer(matrixA, vectorB, vectorX)
+            << '\n';
+    }
 }
 
-inline void solveParVariant2(const TaskContext &ctx) {
-  MathStructs::Matrix localMatrixA = generateLocalMatrix(
-      ctx.n, ctx.rowIndexes[ctx.rank], ctx.rowCounts[ctx.rank]);
+inline void solveParVariant2(const TaskContext& ctx)
+{
+    MathStructs::Matrix localMatrixA = generateLocalMatrix(
+        ctx.n, ctx.rowIndexes[ctx.rank], ctx.rowCounts[ctx.rank]);
 
-  MathStructs::Vector globalVectorB(ctx.n);
-  MathStructs::Vector localVectorX(ctx.rowCounts[ctx.rank]);
-  MathStructs::Vector localVectorB = generateLocalVector(
-      ctx.n, ctx.rowIndexes[ctx.rank], ctx.rowCounts[ctx.rank]);
+    MathStructs::Vector localVectorB = generateLocalVector(ctx.n, ctx.rowIndexes[ctx.rank], ctx.rowCounts[ctx.rank]);
+    MathStructs::Vector localVectorX(ctx.rowCounts[ctx.rank], 0.0);
 
-  auto timeStart = MPI_Wtime();
+    auto timeStart = MPI_Wtime();
 
-  double localVectorBProduct = dotVecVec(localVectorB, localVectorB);
-  double globalVectorBProduct;
-  MPI_Allreduce(&localVectorBProduct, &globalVectorBProduct, 1, MPI_DOUBLE,
-                MPI_SUM, MPI_COMM_WORLD);
+    double localVectorBProduct = dotVecVec(localVectorB, localVectorB);
+    double globalVectorBProduct;
+    MPI_Allreduce(&localVectorBProduct, &globalVectorBProduct, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  double globalVectorRProduct = globalVectorBProduct;
+    double globalVectorRProduct = globalVectorBProduct;
 
-  MathStructs::Vector localVectorR = localVectorB;
-  MathStructs::Vector localVectorZ = localVectorR;
-  MathStructs::Vector localVectorAZ(ctx.rowCounts[ctx.rank]);
-  MathStructs::Vector localVectorTemp(ctx.rowCounts[ctx.rank]);
-  MathStructs::Vector localVectorRNext(ctx.rowCounts[ctx.rank]);
+    MathStructs::Vector localVectorR = localVectorB;
+    MathStructs::Vector localVectorZ = localVectorR;
+    MathStructs::Vector localVectorRNext(ctx.rowCounts[ctx.rank]);
 
-  MathStructs::Vector globalVectorZ(ctx.n);
-  MathStructs::Vector globalVectorAZ(ctx.n);
+    MathStructs::Vector localVectorAZ(ctx.rowCounts[ctx.rank]);
 
-  while (std::sqrt(globalVectorRProduct) / std::sqrt(globalVectorBProduct) >
-         ctx.epsilon) {
-    MPI_Allgatherv(localVectorZ.data(), localVectorZ.size(), MPI_DOUBLE,
-                   globalVectorZ.data(), ctx.rowCounts.data(),
-                   ctx.rowIndexes.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+    MathStructs::Vector localVectorTemp(ctx.rowCounts[ctx.rank]);
 
-    multiply(localMatrixA, globalVectorZ, localVectorAZ);
+    MathStructs::Vector otherVectorZ(ctx.rowCounts[0]);
 
-    MPI_Allgatherv(localVectorAZ.data(), localVectorAZ.size(), MPI_DOUBLE,
-                   globalVectorAZ.data(), ctx.rowCounts.data(),
-                   ctx.rowIndexes.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+    std::vector<MPI_Request> requests(ctx.pcount);
 
-    double scalarA =
-        globalVectorRProduct / dotVecVec(globalVectorAZ, globalVectorZ);
+    while (std::sqrt(globalVectorRProduct / globalVectorBProduct) > ctx.epsilon)
+    {
+        for (int i = 0; i < ctx.pcount; i++)
+        {
+            if (ctx.rank != i)
+            {
+                MPI_Isend(localVectorZ.data(), ctx.rowCounts[ctx.rank], MPI_DOUBLE,
+                          i, 0, MPI_COMM_WORLD, &requests[i]);
+            }
+        }
 
-    multiply(scalarA, localVectorZ, localVectorTemp);
-    add(localVectorX, localVectorTemp, localVectorX);
+        std::fill(localVectorAZ.begin(), localVectorAZ.end(), 0.0);
 
-    multiply(scalarA, localVectorAZ, localVectorTemp);
-    substract(localVectorR, localVectorTemp, localVectorRNext);
+        for (int i = 0; i < ctx.pcount; i++)
+        {
+            if (ctx.rank != i)
+            {
+                otherVectorZ.resize(ctx.rowCounts[i]);
+                MPI_Recv(otherVectorZ.data(), ctx.rowCounts[i], MPI_DOUBLE,
+                         i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    double localVectorRNextProduct =
-        dotVecVec(localVectorRNext, localVectorRNext);
-    double globalVectorRNextProduct;
-    MPI_Allreduce(&localVectorRNextProduct, &globalVectorRNextProduct, 1,
-                  MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+                multiply(localMatrixA, otherVectorZ, localVectorTemp, ctx.rowIndexes[i]);
+                add(localVectorAZ, localVectorTemp, localVectorAZ);
+            }
+            else
+            {
+                multiply(localMatrixA, localVectorZ, localVectorTemp, ctx.rowIndexes[i]);
+                add(localVectorAZ, localVectorTemp, localVectorAZ);
+            }
+        }
 
-    double scalarB = globalVectorRNextProduct / globalVectorRProduct;
+        double localVectorAZZProduct = dotVecVec(localVectorAZ, localVectorZ);
+        double globalVectorAZZProduct = 0;
+        MPI_Allreduce(&localVectorAZZProduct, &globalVectorAZZProduct, 1,
+                      MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    multiply(scalarB, localVectorZ, localVectorTemp);
-    add(localVectorRNext, localVectorTemp, localVectorZ);
+        double scalarA = globalVectorRProduct / globalVectorAZZProduct;
 
-    std::swap(localVectorR, localVectorRNext);
-    globalVectorRProduct = globalVectorRNextProduct;
-  }
+        multiply(scalarA, localVectorZ, localVectorTemp);
+        add(localVectorX, localVectorTemp, localVectorX);
 
-  auto duration = MPI_Wtime() - timeStart;
+        multiply(scalarA, localVectorAZ, localVectorTemp);
+        substract(localVectorR, localVectorTemp, localVectorRNext);
 
-  MathStructs::Vector globalVectorX(ctx.n);
-  MPI_Gatherv(localVectorX.data(), localVectorX.size(), MPI_DOUBLE,
-              globalVectorX.data(), ctx.rowCounts.data(), ctx.rowIndexes.data(),
-              MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        double localVectorRProductNext = dotVecVec(localVectorRNext, localVectorRNext);
+        double globalVectorRProductNext = 0;
+        MPI_Allreduce(&localVectorRProductNext, &globalVectorRProductNext, 1,
+                      MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  MPI_Gatherv(localVectorB.data(), localVectorB.size(), MPI_DOUBLE,
-              globalVectorB.data(), ctx.rowCounts.data(), ctx.rowIndexes.data(),
-              MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        double scalarB = globalVectorRProductNext / globalVectorRProduct;
 
-  if (ctx.rank == 0) {
-    MathStructs::Matrix matrixA = generateLocalMatrix(ctx.n, 0, ctx.n);
-    std::cout << "Time spent: " << duration << " seconds\n";
-    std::cout << "inaccuracy: "
-              << checkAnswer(matrixA, globalVectorB, globalVectorX) << '\n';
-  }
+        multiply(scalarB, localVectorZ, localVectorTemp);
+        add(localVectorRNext, localVectorTemp, localVectorZ);
+
+        std::swap(localVectorR, localVectorRNext);
+        globalVectorRProduct = globalVectorRProductNext;
+    }
+
+    auto duration = MPI_Wtime() - timeStart;
+
+    MathStructs::Vector globalVectorX(ctx.n);
+    MPI_Allgatherv(localVectorX.data(), ctx.rowCounts[ctx.rank], MPI_DOUBLE,
+                   globalVectorX.data(), ctx.rowCounts.data(), ctx.rowIndexes.data(),
+                   MPI_DOUBLE, MPI_COMM_WORLD);
+
+    if (ctx.rank == 0)
+    {
+        MathStructs::Matrix matrixA = generateLocalMatrix(ctx.n, 0, ctx.n);
+        MathStructs::Vector globalVectorB = generateLocalVector(ctx.n, 0, ctx.n);
+        std::cout << "Time spent: " << duration << " seconds\n";
+        std::cout << "inaccuracy: "
+            << checkAnswer(matrixA, globalVectorB, globalVectorX) << '\n';
+    }
 }
