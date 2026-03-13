@@ -80,6 +80,7 @@ if __name__ == "__main__":
             processes_per_node=8,
             N=12500,
             variant=i,
+            type=ProgType.MPE
         )
 
     create_run_scripts()
