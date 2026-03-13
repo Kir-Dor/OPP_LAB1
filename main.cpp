@@ -1,10 +1,9 @@
 #include "SolvePar.hpp"
 #include <iostream>
 #include <mpi.h>
-#ifdef MPE_
-
-#endif
+#ifdef MPE_BUILD
 #include <mpe.h>
+#endif
 #include <string>
 #include <vector>
 
@@ -17,7 +16,9 @@ int main(int argc, char** argv)
     int variant = std::stoi(argv[2]);
     double epsilon = 1e-5;
 
+#ifdef MPE_BUILD
     MPE_Init_log();
+#endif
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &pcount);
@@ -81,8 +82,9 @@ int main(int argc, char** argv)
         }
     }
 
-
+#ifdef MPE_BUILD
     MPE_Finish_log("lab1_log.clog2");
+#endif
 
     MPI_Finalize();
 }
