@@ -82,8 +82,11 @@ int main(int argc, char** argv)
         }
     }
 
+    char logName[1024];
+    sprintf(logName, "mpe_log_v%d.slog2", variant);
+
 #ifdef MPE_BUILD
-    MPE_Finish_log("lab1_log.clog2");
+    MPE_Finish_log(logName);
 #endif
 
     MPI_Finalize();

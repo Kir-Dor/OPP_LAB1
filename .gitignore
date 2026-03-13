@@ -1,4 +1,5 @@
 cmake-build-debug-mpi
 cmake-build-release-mpi
 scripts/run
+run.py
 .vscode
