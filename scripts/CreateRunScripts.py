@@ -13,7 +13,6 @@ class ProgType(Enum):
 def create_shell_script(
     script_path, queue_name="", nodes=1, processes_per_node=1, N=1000, variant=1, type=ProgType.MPI
 ):
-
     scripts.append(script_path)
     script_path = Path(script_path)
     script_path.parent.mkdir(parents=True, exist_ok=True)
@@ -35,7 +34,7 @@ echo “Number of MPI process: $MPI_NP“
 echo 'File $PBS_NODEFILE:'
 cat $PBS_NODEFILE
 echo
-mpirun -machinefile $PBS_NODEFILE -np $MPI_NP ~/lab1/build_release/app {N} {variant}"""
+mpirun -machinefile $PBS_NODEFILE -np $MPI_NP ~/lab1/{"mpi_app" if type == ProgType.MPI else "mpe_app" } {N} {variant}"""
         )
 
     # Make script executable
