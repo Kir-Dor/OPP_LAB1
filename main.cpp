@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     }
 
     char logName[1024];
-    sprintf(logName, "mpe_log_v%d.slog2", variant);
+    sprintf(logName, "mpe_log_v%d.clog2", variant);
 
 #ifdef MPE_BUILD
     MPE_Finish_log(logName);
