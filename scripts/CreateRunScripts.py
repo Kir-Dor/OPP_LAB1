@@ -6,6 +6,8 @@ from pathlib import Path
 
 scripts = []
 
+workdir = "~/lab1"
+
 class ProgType(Enum):
     MPE = 1
     MPI = 2
@@ -24,8 +26,7 @@ def create_shell_script(
 #PBS -l walltime=00:05:00
 #PBS -l select={nodes}:ncpus=8:mpiprocs={processes_per_node}
 #PBS -m n
-mkdir -p ~/lab1/output
-cd ~/lab1/output
+cd $PBS_O_WORKDIR
 MPI_NP=$(wc -l $PBS_NODEFILE | awk '{{ print $1 }}')
 echo “Number of MPI process: $MPI_NP“
 echo 'File $PBS_NODEFILE:'
@@ -39,7 +40,7 @@ mpirun -machinefile $PBS_NODEFILE -np $MPI_NP ~/lab1/{"mpi_app" if type == ProgT
     print(f"Shell script created: {script_path}")
 
 def create_run_scripts():
-    script_path = Path("scripts/run.py")
+    script_path = Path(f"{workdir}/scripts/run.py")
     script_path.parent.mkdir(parents=True, exist_ok=True)
     with open(script_path, "w") as f:
         f.write("import subprocess\n\n")
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     queue_name = sys.argv[1] if len(sys.argv) > 1 else ""
     for i in range(1, 3):
         create_shell_script(
-            f"scripts/run/run_mpi_p1_v{i}.sh",
+            f"{workdir}/scripts/run/run_mpi_p1_v{i}.sh",
             queue_name=queue_name,
             nodes=1,
             processes_per_node=1,
@@ -62,7 +63,7 @@ if __name__ == "__main__":
 
         for j in pcounts:
             create_shell_script(
-                f"scripts/run/run_mpi_p{j*2}_v{i}.sh",
+                f"{workdir}/scripts/run/run_mpi_p{j*2}_v{i}.sh",
                 queue_name=queue_name,
                 nodes=2,
                 processes_per_node=j,
@@ -71,7 +72,7 @@ if __name__ == "__main__":
             )
 
         create_shell_script(
-            f"scripts/run/run_mpe_p16_v{i}.sh",
+            f"{workdir}/scripts/run/run_mpe_p16_v{i}.sh",
             queue_name=queue_name,
             nodes=2,
             processes_per_node=8,
