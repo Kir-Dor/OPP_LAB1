@@ -6,7 +6,7 @@ from pathlib import Path
 
 scripts = []
 
-workdir = "~/lab1"
+workdir = "/mnt/storage/home/hpcusers/hpcuser96/lab1"
 
 class ProgType(Enum):
     MPE = 1
